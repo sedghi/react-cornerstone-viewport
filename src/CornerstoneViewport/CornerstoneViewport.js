@@ -217,7 +217,7 @@ class CornerstoneViewport extends Component {
       imageIdIndex: imageIndex,
       isStackPrefetchEnabled,
       initialViewport,
-      stageChanged
+      stageChanged,
     } = this.props;
     const {
       imageIds: prevStack,
@@ -231,8 +231,8 @@ class CornerstoneViewport extends Component {
 
     if (hasStackChanged) {
       if (stageChanged) {
-        this.componentWillUnmount()
-        await this.componentDidMount()
+        this.componentWillUnmount();
+        await this.componentDidMount();
       }
       // update stack toolstate
       cornerstoneTools.clearToolState(this.element, 'stack');
