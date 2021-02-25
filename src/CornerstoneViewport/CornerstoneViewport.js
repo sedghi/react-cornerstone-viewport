@@ -47,6 +47,8 @@ class CornerstoneViewport extends Component {
     isPlaying: PropTypes.bool,
     frameRate: PropTypes.number, // Between 1 and ?
     //
+    initialViewport: PropTypes.object, // Called when viewport should be set to active?
+    stageChanged: PropTypes.bool,
     setViewportActive: PropTypes.func, // Called when viewport should be set to active?
     onNewImage: PropTypes.func,
     onNewImageDebounced: PropTypes.func,
@@ -90,6 +92,8 @@ class CornerstoneViewport extends Component {
     cineFrameRate: 24,
     viewportOverlayComponent: ViewportOverlay,
     imageIds: ['no-id://'],
+    initialViewport: {},
+    stageChanged: false,
     // Init
     cornerstoneOptions: {},
     isStackPrefetchEnabled: false,
@@ -149,7 +153,9 @@ class CornerstoneViewport extends Component {
       imageIds,
       isPlaying,
       frameRate,
+      initialViewport,
     } = this.props;
+
     const { imageIdIndex } = this.state;
     const imageId = imageIds[imageIdIndex];
 
@@ -185,7 +191,7 @@ class CornerstoneViewport extends Component {
 
       // Display
 
-      cornerstone.displayImage(this.element, image);
+      cornerstone.displayImage(this.element, image, initialViewport);
 
       if (isStackPrefetchEnabled) {
         cornerstoneTools.stackPrefetch.enable(this.element);
@@ -210,6 +216,8 @@ class CornerstoneViewport extends Component {
       imageIds: stack,
       imageIdIndex: imageIndex,
       isStackPrefetchEnabled,
+      initialViewport,
+      stageChanged
     } = this.props;
     const {
       imageIds: prevStack,
@@ -222,6 +230,10 @@ class CornerstoneViewport extends Component {
     let updatedState = {};
 
     if (hasStackChanged) {
+      if (stageChanged) {
+        this.componentWillUnmount()
+        await this.componentDidMount()
+      }
       // update stack toolstate
       cornerstoneTools.clearToolState(this.element, 'stack');
       cornerstoneTools.addToolState(this.element, 'stack', {
@@ -239,8 +251,13 @@ class CornerstoneViewport extends Component {
         cornerstoneTools.stopClip(this.element);
         const image = await cornerstone.loadAndCacheImage(imageId);
 
-        cornerstone.displayImage(this.element, image);
+        cornerstone.displayImage(this.element, image, initialViewport);
         cornerstone.reset(this.element);
+        if (initialViewport) {
+          // If we have initial viewport we need to apply it again for
+          // the new image stack
+          cornerstone.displayImage(this.element, image, initialViewport);
+        }
       } catch (err) {
         // :wave:
         // What if user kills component before `displayImage`?
